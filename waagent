@@ -1447,8 +1447,7 @@ class UbuntuDistro(debianDistro):
                 return True
             time.sleep(1)
         Error("Can't find host key: {0}".format(path))
-        return False
-
+        return False    
 
 ############################################################    
 #	LinuxMintDistro
@@ -4733,9 +4732,9 @@ class WALAEventMonitor(WALAEvent):
                 self.sysInfo["GAVersion"]=GuestAgentVersion
                 self.sysInfo["RAM"]=MyDistro.getTotalMemory()
                 self.sysInfo["Processors"]=MyDistro.getProcessorCores()
-                sharedConfig = xml.dom.minidom.parse("/var/lib/waagent/SharedConfig.xml").childNodes[0]
-                hostEnvConfig= xml.dom.minidom.parse("/var/lib/waagent/HostingEnvironmentConfig.xml").childNodes[0]
-                gfiles = RunGetOutput("ls -t /var/lib/waagent/GoalState.*.xml")[1]
+                sharedConfig = xml.dom.minidom.parse(LibDir + "/SharedConfig.xml").childNodes[0]
+                hostEnvConfig= xml.dom.minidom.parse(LibDir + "/HostingEnvironmentConfig.xml").childNodes[0]
+                gfiles = RunGetOutput("ls -t " + LibDir + "/GoalState.*.xml")[1]
                 goalStateConfi =  xml.dom.minidom.parse(gfiles.split("\n")[0]).childNodes[0]
                 self.sysInfo["TenantName"]=hostEnvConfig.getElementsByTagName("Deployment")[0].getAttribute("name")
                 self.sysInfo["RoleName"]=hostEnvConfig.getElementsByTagName("Role")[0].getAttribute("name")
@@ -5927,8 +5926,8 @@ def main():
             myLogger.verbose = True
         elif re.match("^([-/]*)force", a):
             force = True
-        elif re.match("^(?:[-/]*)conf=.+", a):
-            conf_file = re.match("^(?:[-/]*)conf=(.+)", a).groups()[0]
+        elif re.match("^(?:[-/]*)conf(?:=|:).+", a):
+            conf_file = re.match("^(?:[-/]*)conf(?:=|:)(.+)", a).groups()[0]
         elif re.match("^([-/]*)(setup|install)", a):
             sys.exit(MyDistro.Install())
         elif re.match("^([-/]*)(uninstall)", a):
@@ -5959,6 +5958,11 @@ def main():
         elif re.match("^([-/]*)serialconsole", a):
             AppendToLinuxKernelCmdline("console=ttyS0 earlyprintk=ttyS0")
             Log("Configured kernel to use ttyS0 as the boot console.")
+            sys.exit(0)
+        elif re.match("^(?:[-/]*)config-scsi(?:=|:).+", a):
+            deviceName = re.match("^(?:[-/]*)config-scsi(?:=|:)(.+)", a).groups()[0]
+            scsiTimeout = Config.get("OS.RootDeviceScsiTimeout")
+            MyDistro.setBlockDeviceTimeout(deviceName, scsiTimeout)
             sys.exit(0)
         else:
             print("Invalid command line parameter:" + a)

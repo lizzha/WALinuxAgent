@@ -1051,6 +1051,25 @@ class redhatDistro(AbstractDistro):
         else:
             return 0
 
+    def isAtomic(self):
+        distro = DistInfo(1)[0]
+        if 'Atomic' in distro:
+            return True
+        return False
+
+    def deleteRootPassword(self):
+        filepath = "/etc/shadow"
+        content = "root:*LOCK*:14600::::::\n" + "\n".join(filter(lambda a: not a.startswith("root:"),GetFileContents(filepath).split('\n')))
+        if self.isAtomic():
+            SetFileContents(filepath,content)
+        else:
+            ReplaceFileContentsAtomic(filepath,content)
+        os.chmod(filepath,self.shadow_file_mode)
+        if self.isSelinuxSystem():
+            self.setSelinuxContext(filepath,'system_u:object_r:shadow_t:s0')
+        Log("Root password deleted.")
+        return 0
+
 
 
 ############################################################    
